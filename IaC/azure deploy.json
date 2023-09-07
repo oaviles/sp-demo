@@ -1,0 +1,119 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "eventHubName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Event Hub to create."
+            }
+        },
+        "eventHubNamespace": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Event Hub namespace to create."
+            }
+        },
+        "streamAnalyticsJobName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the Stream Analytics job to create."
+            }
+        },
+        "streamAnalyticsQuery": {
+            "type": "string",
+            "metadata": {
+                "description": "The Stream Analytics query to use for the job."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.EventHub/namespaces",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[parameters('eventHubNamespace')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+            },
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.EventHub/namespaces/eventhubs",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[concat(parameters('eventHubNamespace'), '/', parameters('eventHubName'))]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubNamespace'))]"
+            ],
+            "properties": {
+                "messageRetentionInDays": 1,
+                "partitionCount": 2
+            }
+        },
+        {
+            "type": "Microsoft.StreamAnalytics/streamingjobs",
+            "apiVersion": "2016-03-01",
+            "name": "[parameters('streamAnalyticsJobName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventHubNamespace'), parameters('eventHubName'))]"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "Standard"
+                },
+                "eventsOutOfOrderPolicy": "adjust",
+                "eventsOutOfOrderMaxDelayInSeconds": 0,
+                "outputErrorPolicy": "stop",
+                "dataLocale": "en-US",
+                "compatibilityLevel": 1.0,
+                "inputs": [
+                    {
+                        "name": "input1",
+                        "properties": {
+                            "serialization": {
+                                "type": "Avro",
+                                "properties": {
+                                    "encoding": "UTF8"
+                                }
+                            },
+                            "type": "Microsoft.EventHub/EventHubs",
+                            "serviceBusNamespace": "[parameters('eventHubNamespace')]",
+                            "sharedAccessPolicyName": "RootManageSharedAccessKey",
+                            "sharedAccessPolicyKey": "[listKeys(resourceId('Microsoft.EventHub/namespaces/eventhubs/authorizationRules', parameters('eventHubNamespace'), parameters('eventHubName'), 'RootManageSharedAccessKey'), '2017-04-01').primaryKey]",
+                            "eventHubName": "[parameters('eventHubName')]"
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "output1",
+                        "properties": {
+                            "serialization": {
+                                "type": "Json"
+                            },
+                            "type": "PowerBI",
+                            "dataSource": {
+                                "type": "Microsoft.PowerBI/pushdatasets",
+                                "properties": {
+                                    "datasetName": "MyDataset",
+                                    "tableName": "MyTable",
+                                    "pushUrl": "https://api.powerbi.com/beta/<push-url>"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "transformation": {
+                    "name": "transformation1",
+                    "properties": {
+                        "streamingUnits": 1,
+                        "query": "[parameters('streamAnalyticsQuery')]"
+                    }
+                }
+            }
+        }
+    ]
+}
