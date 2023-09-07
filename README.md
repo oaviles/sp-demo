@@ -8,7 +8,4 @@
 
 3. [Template file](https://raw.githubusercontent.com/oaviles/sp-demo/main/IaC/azuredeploy.json)
 
-https://raw.githubusercontent.com/oaviles/sp-demo/main/IaC/azuredeploy.json
-https%3A%2F%2Fraw.githubusercontent.com%2Foaviles%2Fsp-demo%2Fmain%2FIaC%2Fazuredeploy.json
-https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Foaviles%2Fsp-demo%2Fmain%2FIaC%2Fazuredeploy.json
 
